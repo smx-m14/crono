@@ -1,0 +1,2 @@
+# crono
+Cronòmetre d'examen
