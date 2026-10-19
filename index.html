@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="ca">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rellotge d'examen</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body class="mode-clock">
+
+<header class="ui topbar">
+  <nav class="seg" id="modes">
+    <button data-mode="clock" title="Rellotge (1)">Rellotge</button>
+    <button data-mode="timer" title="Temporitzador (2)">Temporitzador</button>
+    <button data-mode="stopwatch" title="Cronòmetre (3)">Cronòmetre</button>
+  </nav>
+  <div class="tools">
+    <button class="btn icon" id="smaller" title="Lletra més petita (−)">A−</button>
+    <button class="btn icon" id="bigger" title="Lletra més gran (+)">A+</button>
+    <button class="btn icon" id="soundBtn" title="Activa/desactiva el so (S)">
+      <svg viewBox="0 0 24 24" class="on-ico"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none"/></svg>
+      <svg viewBox="0 0 24 24" class="off-ico"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16.5 9.5l5 5M21.5 9.5l-5 5" fill="none"/></svg>
+    </button>
+    <button class="btn icon" id="fsBtn" title="Pantalla completa (F)">
+      <svg viewBox="0 0 24 24"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5" fill="none"/></svg>
+    </button>
+  </div>
+</header>
+
+<main>
+  <input id="title" class="title" placeholder="Títol (opcional)" maxlength="80" spellcheck="false" autocomplete="off">
+  <div class="display" id="display">
+    <span class="ghost" id="ghost">88:88:88</span>
+    <span class="digits" id="digits">00:00:00</span>
+    <span class="measure" id="m8" aria-hidden="true">8</span>
+  </div>
+  <div class="sub" id="sub"></div>
+  <div class="banner" id="banner" hidden></div>
+</main>
+
+<footer class="ui controls">
+  <div class="ctl ctl-clock">
+    <label class="chk"><input type="checkbox" id="optSeconds"> Segons</label>
+    <label class="chk"><input type="checkbox" id="optDate"> Data</label>
+  </div>
+
+  <div class="ctl ctl-timer">
+    <div class="setup">
+      <div class="hms">
+        <label><input type="number" id="inH" min="0" max="23" inputmode="numeric"><span>h</span></label>
+        <label><input type="number" id="inM" min="0" max="59" inputmode="numeric"><span>min</span></label>
+        <label><input type="number" id="inS" min="0" max="59" inputmode="numeric"><span>s</span></label>
+      </div>
+      <div class="presets">
+        <button class="btn sm" data-min="5">5′</button>
+        <button class="btn sm" data-min="10">10′</button>
+        <button class="btn sm" data-min="15">15′</button>
+        <button class="btn sm" data-min="30">30′</button>
+        <button class="btn sm" data-min="45">45′</button>
+        <button class="btn sm" data-min="60">1 h</button>
+        <button class="btn sm" data-min="90">1 h 30′</button>
+        <button class="btn sm" data-min="120">2 h</button>
+      </div>
+    </div>
+    <div class="row">
+      <button class="btn primary" id="tStart" title="Espai">Inicia</button>
+      <button class="btn run-only" id="tMinus" title="Treu 1 minut">−1 min</button>
+      <button class="btn run-only" id="tPlus" title="Afegeix 1 minut">+1 min</button>
+      <button class="btn" id="tReset" title="R">Reinicia</button>
+      <button class="btn" id="tAlerts">Avisos…</button>
+    </div>
+  </div>
+
+  <div class="ctl ctl-stopwatch">
+    <div class="row">
+      <button class="btn primary" id="sStart" title="Espai">Inicia</button>
+      <button class="btn" id="sReset" title="R">Reinicia</button>
+    </div>
+  </div>
+</footer>
+
+<div class="progress" id="progress"><div id="progressFill"></div></div>
+
+<dialog id="alertsDlg">
+  <form method="dialog">
+    <h2>Avisos del temporitzador</h2>
+    <fieldset>
+      <legend>Avisar quan…</legend>
+      <label class="chk"><input type="checkbox" data-alert="half"> hagi passat la meitat del temps</label>
+      <label class="chk"><input type="checkbox" data-alert="m15"> quedin 15 minuts</label>
+      <label class="chk"><input type="checkbox" data-alert="m10"> quedin 10 minuts</label>
+      <label class="chk"><input type="checkbox" data-alert="m5"> quedin 5 minuts</label>
+      <label class="chk"><input type="checkbox" data-alert="m1"> quedi 1 minut</label>
+      <label class="chk"><input type="checkbox" data-alert="custom"> quedin
+        <input type="number" id="customMin" min="1" max="600" class="mini"> minuts</label>
+      <p class="note">Sempre s'avisa quan s'acaba el temps.</p>
+    </fieldset>
+    <fieldset>
+      <legend>Com avisar</legend>
+      <label class="chk"><input type="checkbox" data-alert="flash"> La pantalla parpelleja i surt un missatge</label>
+      <label class="chk"><input type="checkbox" data-alert="redLast"> Números en vermell l'últim minut</label>
+      <label class="vol">Volum <input type="range" id="volume" min="0" max="1" step="0.05"></label>
+      <div class="row left">
+        <button type="button" class="btn sm" id="testWarn">Prova l'avís</button>
+        <button type="button" class="btn sm" id="testEnd">Prova l'alarma final</button>
+      </div>
+    </fieldset>
+    <div class="row right">
+      <button class="btn primary">Fet</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="app.js"></script>
+</body>
+</html>

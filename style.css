@@ -1,0 +1,262 @@
+/* Font clockicons (de reloj-alarma.es) — només per a ús intern, no redistribuir */
+@font-face {
+  font-family: "clockicons";
+  src: url("fonts/clockicons.woff2") format("woff2");
+  font-weight: 400;
+  font-display: block;
+}
+
+/* Roboto (c) Google — Apache License 2.0, vegeu fonts/LICENSE-Roboto.txt */
+@font-face { font-family: "Roboto"; src: url("fonts/roboto-400.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Roboto"; src: url("fonts/roboto-500.woff2") format("woff2"); font-weight: 500; font-display: swap; }
+@font-face { font-family: "Roboto"; src: url("fonts/roboto-700.woff2") format("woff2"); font-weight: 700; font-display: swap; }
+
+:root {
+  --bg: #fff;
+  --fg: #111;
+  --muted: #8a8a8a;
+  --line: #e2e2e2;
+  --ghost: #f3f3f3;
+  --warn: #ffe27a;
+  --alarm: #d40000;
+  --alarm-bg: #ffd9d9;
+  --d: 200px; /* mida dels dígits, la calcula app.js */
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: "Roboto", system-ui, "Segoe UI", Helvetica, Arial, sans-serif;
+  overflow: hidden;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* ---------- Interfície que s'amaga ---------- */
+.ui { transition: opacity .5s; }
+body.idle .ui { opacity: 0; pointer-events: none; }
+body.idle { cursor: none; }
+
+.topbar {
+  position: fixed;
+  inset: 0 0 auto 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 16px 20px;
+  z-index: 2;
+}
+
+.seg {
+  display: inline-flex;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 3px;
+  background: var(--bg);
+}
+.seg button {
+  border: 0;
+  background: none;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 15px;
+  color: var(--muted);
+  cursor: pointer;
+}
+.seg button:hover { color: var(--fg); }
+.seg button.on { background: var(--fg); color: var(--bg); }
+
+.tools { display: flex; gap: 6px; }
+
+.btn {
+  border: 1px solid var(--line);
+  background: var(--bg);
+  border-radius: 999px;
+  padding: 9px 18px;
+  font: inherit;
+  font-size: 15px;
+  color: var(--fg);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.btn:hover { border-color: #b5b5b5; }
+.btn:active { transform: translateY(1px); }
+.btn.primary { background: var(--fg); border-color: var(--fg); color: var(--bg); min-width: 120px; }
+.btn.primary:hover { background: #333; }
+.btn.sm { padding: 6px 12px; font-size: 14px; }
+.btn.icon { width: 40px; height: 40px; padding: 0; font-weight: 500; }
+.btn svg { width: 20px; height: 20px; fill: currentColor; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+#soundBtn .off-ico { display: none; }
+body.muted #soundBtn .on-ico { display: none; }
+body.muted #soundBtn .off-ico { display: block; }
+body.muted #soundBtn { color: var(--muted); }
+
+/* ---------- Pantalla principal ---------- */
+main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--d) * .1);
+  padding: 0 3vw;
+  transition: background-color .2s;
+}
+
+.title {
+  font: inherit;
+  font-weight: 500;
+  font-size: max(20px, calc(var(--d) * .2));
+  text-align: center;
+  border: 0;
+  outline: 0;
+  background: none;
+  color: var(--fg);
+  width: 90vw;
+  padding: 0;
+  user-select: text;
+}
+.title::placeholder { color: #d0d0d0; }
+body.idle .title:placeholder-shown { visibility: hidden; }
+
+.display {
+  position: relative;
+  font-family: "clockicons", monospace;
+  font-weight: 400;
+  font-synthesis: none;
+  font-size: var(--d);
+  line-height: 1;
+  white-space: nowrap;
+}
+.ghost { color: transparent; } /* invisible: només serveix per calcular la mida */
+.digits { position: absolute; top: 0; left: 0; }
+/* totes les xifres ocupen el mateix espai (l'"1" és més estret) */
+.dg { display: inline-block; width: var(--dw, .55em); text-align: right; }
+.measure { position: absolute; visibility: hidden; }
+
+.sub {
+  font-size: max(18px, calc(var(--d) * .13));
+  color: var(--muted);
+  min-height: 1.2em;
+  text-align: center;
+}
+.sub:first-letter { text-transform: uppercase; }
+
+.banner {
+  font-size: max(22px, calc(var(--d) * .2));
+  font-weight: 700;
+  padding: .25em .9em;
+  border: 3px solid var(--fg);
+  border-radius: .4em;
+  text-align: center;
+  cursor: pointer;
+  background: var(--bg);
+}
+.banner[hidden] { display: none; }
+
+/* ---------- Estats ---------- */
+body.paused .digits { animation: blink 1s steps(1) infinite; }
+body.last-minute .digits { color: var(--alarm); }
+body.alarm .digits { color: var(--alarm); animation: blink .5s steps(1) infinite; }
+body.finished .digits { color: var(--alarm); }
+body.alarm main { animation: alarmBg 1s steps(1) infinite; }
+body.alarm .banner { border-color: var(--alarm); color: var(--alarm); }
+body.flash main { animation: warnBg .7s ease-in-out 4; }
+
+@keyframes blink { 50% { opacity: .15; } }
+@keyframes warnBg { 50% { background: var(--warn); } }
+@keyframes alarmBg { 50% { background: var(--alarm-bg); } }
+
+/* ---------- Controls inferiors ---------- */
+.controls {
+  position: fixed;
+  inset: auto 0 0 0;
+  padding: 16px 20px 28px;
+  display: flex;
+  justify-content: center;
+  z-index: 2;
+}
+.ctl { display: none; flex-direction: column; align-items: center; gap: 14px; }
+body.mode-clock .ctl-clock,
+body.mode-timer .ctl-timer,
+body.mode-stopwatch .ctl-stopwatch { display: flex; }
+.ctl-clock { flex-direction: row; gap: 22px; }
+
+.row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.row.left { justify-content: flex-start; }
+.row.right { justify-content: flex-end; }
+
+.setup { display: none; flex-direction: column; align-items: center; gap: 12px; }
+body.t-idle .setup { display: flex; }
+body.t-idle .run-only { display: none; }
+
+.hms { display: flex; gap: 10px; }
+.hms label { display: flex; align-items: baseline; gap: 4px; color: var(--muted); font-size: 15px; }
+.hms input, .mini {
+  width: 3.4em;
+  font: inherit;
+  font-size: 22px;
+  text-align: center;
+  padding: 6px 4px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: var(--fg);
+  background: var(--bg);
+}
+.hms input:focus, .mini:focus { outline: 2px solid var(--fg); outline-offset: -1px; }
+.presets { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+
+.chk { display: flex; align-items: center; gap: 8px; font-size: 15px; cursor: pointer; }
+.chk input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--fg); margin: 0; }
+
+/* ---------- Barra de progrés ---------- */
+.progress {
+  position: fixed;
+  inset: auto 0 0 0;
+  height: 6px;
+  background: transparent;
+  display: none;
+}
+body.mode-timer:not(.t-idle) .progress { display: block; }
+#progressFill { height: 100%; width: 100%; background: #d6d6d6; transition: width .3s linear; }
+body.last-minute #progressFill, body.finished #progressFill { background: var(--alarm); }
+
+/* ---------- Diàleg d'avisos ---------- */
+dialog {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 24px 28px;
+  width: min(440px, calc(100% - 32px));
+  color: var(--fg);
+  background: var(--bg);
+  box-shadow: 0 20px 60px rgba(0,0,0,.12);
+}
+dialog::backdrop { background: rgba(255,255,255,.7); }
+dialog h2 { margin: 0 0 16px; font-size: 20px; font-weight: 500; }
+fieldset { border: 0; padding: 0; margin: 0 0 18px; display: flex; flex-direction: column; gap: 10px; }
+legend { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 8px; }
+.mini { width: 3.6em; font-size: 15px; padding: 3px 4px; }
+.note { margin: 0; font-size: 13px; color: var(--muted); }
+.vol { display: flex; align-items: center; gap: 10px; font-size: 15px; }
+.vol input { flex: 1; accent-color: var(--fg); }
+
+@media (max-width: 640px) {
+  .seg button { padding: 7px 10px; font-size: 13px; }
+  .btn.icon { width: 34px; height: 34px; }
+}
